@@ -105,7 +105,7 @@ def compute_directional_week(wk, capital=10000, pip_size=None, pip_value=None, p
         dd_cap = float(price_diff_to_dollars(highs.max() - monday_open) / capital * 100)
 
     dd_cap = abs(dd_cap)  # ensure positive drawdown
-    cr_dd = float((best_ret * 100) / dd_cap) if dd_cap != 0 else None
+    cr_dd = float(best_ret / (dd_cap / 100)) if dd_cap != 0 else None
 
     return {
         "direction": direction,
@@ -447,4 +447,5 @@ if selected_assets:
         """)
     else:
         st.info("No trade suggestion available due to missing CR/DD or direction metrics.")
+
 
