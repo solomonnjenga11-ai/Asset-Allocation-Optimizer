@@ -105,7 +105,8 @@ def compute_directional_week(wk, capital=10000, pip_size=None, pip_value=None, p
         dd_cap = float(price_diff_to_dollars(highs.max() - monday_open) / capital * 100)
 
     dd_cap = abs(dd_cap)  # ensure positive drawdown
-    cr_dd = float(best_ret / (dd_cap / 100)) if dd_cap != 0 else None
+    cr_dd = float((best_ret * 100) / dd_cap) if dd_cap != 0 else None
+
 
     return {
         "direction": direction,
@@ -237,7 +238,7 @@ def build_metrics_dict(assets=ASSETS, capital=10000, period="1y"):
 def summarize_asset_metrics(df):
     avg_ret = float(df["return_cap (%)"].mean() / 100.0) if "return_cap (%)" in df else 0.0
     avg_dd = float(df["drawdown_cap (%)"].mean() / 100.0) if "drawdown_cap (%)" in df else 0.0
-    avg_crdd = avg_ret / avg_dd if avg_dd != 0 else None 
+    avg_crdd = avg_ret / avg_dd if avg_dd != 0 else None
     sharpe = float(df["Sharpe"].mean()) if "Sharpe" in df else None
     return avg_ret, avg_dd, avg_crdd, sharpe
 
@@ -366,14 +367,22 @@ if selected_assets:
             st.subheader(f"{asset} ({granularity} data) — Latest Week")
             st.dataframe(latest)
         else:
-            avg = df.drop(columns=["granularity"]).mean(numeric_only=True).to_frame()
-            avg.columns = [f"{asset} ({granularity})"]
+            avg_ret, avg_dd, avg_crdd, sharpe = summarize_asset_metrics(df)
+            avg_df = pd.DataFrame({
+                f"{asset} ({granularity})": {
+                    "return_cap (%)": round(avg_ret * 100, 2),
+                    "drawdown_cap (%)": round(avg_dd * 100, 2),
+                    "CR/DD": round(avg_crdd, 2) if avg_crdd is not None else None,
+                    "Sharpe": round(sharpe, 4) if sharpe is not None else None
+                }
+            }).T
             st.subheader(f"{asset} ({granularity} data) — Average Across Weeks")
-            st.dataframe(avg)
+            st.dataframe(avg_df)
 else:
     st.warning("Please select at least one asset from the sidebar.")
 
 st.markdown("---")
+
 
 # -----------------------------
 # Prescriptive Optimization & Recommendations
@@ -435,18 +444,36 @@ if selected_assets:
     else:
         st.info("No optimization performed because no assets qualified under the current scenario.")
 
-    # 3) Decision intelligence: trade-level suggestion
-    st.subheader("Trade-level suggestion (decision intelligence)")
-    di_rec = decision_intelligence_recommendation(metrics_dict, qualified_assets if qualified_assets else selected_assets)
-    if di_rec:
+    # 3) Decision intelligence: trade-level insights
+    st.subheader("Trade-level insights (decision intelligence)")
+    di_assets = qualified_assets if qualified_assets else selected_assets
+    insights = []
+
+    for asset in di_assets:
+        df = metrics_dict[asset]
+        latest = df.tail(1).iloc[0]
+        crdd = latest.get("CR/DD", None)
+        direction = latest.get("direction", None)
+        end_day = latest.get("end_day", None)
+        granularity = df["granularity"].iloc[0]
+
+        if crdd is not None and direction is not None:
+            insights.append({
+                "Asset": asset,
+                "Direction": direction,
+                "Exit Day": end_day,
+                "CR/DD": round(crdd, 2),
+                "Granularity": granularity
+            })
+
+    if insights:
+        st.markdown("**Selected trades that align with your risk preference:**")
+        insight_df = pd.DataFrame(insights)
+        st.dataframe(insight_df.set_index("Asset"))
+
         st.markdown(f"""
-**Suggested trade:** {di_rec['asset']} — go **{di_rec['direction']}** this week.  
-**Exit target:** {di_rec['exit_day']}  
-**Rationale:** Highest recent CR/DD ({di_rec['crdd']}) among the considered assets.  
-**Data granularity:** {di_rec['granularity']}
+**Suggested exit logic:** For each asset, consider exiting the trade once it achieves a return of approximately **{min_return_dd_mult:.1f} × drawdown**.  
+*Note: These insights are based on dominant trade patterns observed over the selected historical period ({period_option}). They reflect recent performance, not forward-looking predictions.*
         """)
     else:
-        st.info("No trade suggestion available due to missing CR/DD or direction metrics.")
-
-
-
+        st.info("No trade insights available due to missing CR/DD or direction metrics.")
