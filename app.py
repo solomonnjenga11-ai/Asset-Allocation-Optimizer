@@ -247,12 +247,22 @@ def filter_assets_by_multiplier(selected_assets, metrics_dict, multiplier):
     excluded = []
     for asset in selected_assets:
         df = metrics_dict[asset]
-        avg_ret, avg_dd, _, _ = summarize_asset_metrics(df)
-        if avg_ret >= multiplier * avg_dd:
+        valid = df[(df["return_cap (%)"].notna()) & (df["drawdown_cap (%)"].notna())]
+        valid = valid[(valid["drawdown_cap (%)"] > 0)]
+
+        if valid.empty:
+            excluded.append((asset, 0.0, 0.0))
+            continue
+
+        avg_ret = float(valid["return_cap (%)"].mean() / 100.0)
+        avg_dd = float(valid["drawdown_cap (%)"].mean() / 100.0)
+
+        if avg_dd > 0 and avg_ret >= multiplier * avg_dd:
             qualified.append(asset)
         else:
             excluded.append((asset, avg_ret, avg_dd))
     return qualified, excluded
+
 
 def optimize_portfolio(selected_assets, metrics_dict, max_portfolio_dd):
     returns = []
