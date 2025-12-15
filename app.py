@@ -237,7 +237,7 @@ def build_metrics_dict(assets=ASSETS, capital=10000, period="1y"):
 def summarize_asset_metrics(df):
     avg_ret = float(df["return_cap (%)"].mean() / 100.0) if "return_cap (%)" in df else 0.0
     avg_dd = float(df["drawdown_cap (%)"].mean() / 100.0) if "drawdown_cap (%)" in df else 0.0
-    avg_crdd = float(df["CR/DD"].mean()) if "CR/DD" in df else None
+    avg_crdd = avg_ret / avg_dd if avg_dd != 0 else None 
     sharpe = float(df["Sharpe"].mean()) if "Sharpe" in df else None
     return avg_ret, avg_dd, avg_crdd, sharpe
 
@@ -447,5 +447,6 @@ if selected_assets:
         """)
     else:
         st.info("No trade suggestion available due to missing CR/DD or direction metrics.")
+
 
 
