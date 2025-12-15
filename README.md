@@ -10,6 +10,18 @@ This interactive Streamlit dashboard helps investors and analysts make smarter, 
 
 ---
 
+## 🎬 Demo Video
+
+[Watch the 3-minute walkthrough →](https://www.loom.com/share/8ee64f5f1e474b60a533634f988d1a48)
+
+This video covers:
+
+- **The Problem (60 sec):** Why risk-aware asset selection matters in volatile markets.
+- **Your Approach (60 sec):** How the dashboard uses prescriptive analytics to filter and optimize.
+- **Live Demo (90–120 sec):** A walkthrough of the app, including asset selection, scenario tuning, and portfolio recommendations.
+- **What You Learned (30–60 sec):** Key takeaways from building a real-world optimization tool.
+
+
 ## 🔍 Features
 
 - ✅ **Ticker Validation**: Instantly check which assets are currently supported via live data.
